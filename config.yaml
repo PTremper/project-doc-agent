@@ -1,0 +1,9 @@
+ignore:
+  - __pycache__
+  - __init__
+  - .venv
+  - .git
+  - backup
+summary_llm: qwen/qwen2.5-coder-14b
+architecture_llm: qwen/qwen2.5-coder-14b
+readme_llm: qwen2.5-14b-instruct
