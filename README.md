@@ -4,18 +4,6 @@ Generate project documentation from source code using a configurable multi-stage
 
 `project-doc-agent` analyzes a Python repository, creates module-level summaries, combines them into an architecture overview, and finally generates a draft `README.md`. The goal is to provide a solid starting point for project documentation while keeping the entire workflow configurable and model-agnostic.
 
-## Features
-
-* Recursive Python project scanning
-* Configurable file and directory exclusions
-* Module-level code summarization
-* Repository architecture synthesis
-* Automated README generation
-* Support for local LLMs through LM Studio
-* YAML-based configuration
-* Editable prompt templates for every pipeline stage
-* Extensible design for adding new models and processing steps
-
 ## How It Works
 
 The documentation pipeline consists of three stages:
@@ -37,14 +25,14 @@ The documentation pipeline consists of three stages:
 
 ```text
 Python Repository
-        │
-        ▼
+      │  
+      ▼  
 Module Summaries
-        │
-        ▼
+    │   │
+    │   ▼
 Architecture Summary
-        │
-        ▼
+    │   │
+    ▼   ▼
 README Draft
 ```
 
@@ -57,7 +45,7 @@ Configuration options include:
 * LLM selection per pipeline stage
 * Ignored files and directories
 
-System prompt templates resied in `system_prompts.py`.
+System prompt templates resides in `system_prompts.py`.
 
 This allows experimenting with different models and prompts without changing application code.
 
@@ -78,10 +66,9 @@ Generated artifacts are written to the configured output directory and can be re
 
 The long-term goal is to create a modular documentation pipeline where different LLMs can be assigned to specialized tasks such as:
 
-* Docstring generation
-* Agentic docstring implementation
-* API documentation
-* Architecture diagrams
+* Docstring generation and agentic implementation
 * README generation
+* API documentation
+* ...
 
 This allows smaller local models to handle code analysis while larger models can be reserved for producing polished user-facing documentation.
