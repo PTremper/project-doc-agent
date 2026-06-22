@@ -4,6 +4,18 @@ ignore:
   - .venv
   - .git
   - backup
-summary_llm: qwen/qwen2.5-coder-14b
-architecture_llm: qwen/qwen2.5-coder-14b
-readme_llm: qwen2.5-14b-instruct
+module_summary_llm:
+  model: qwen/qwen2.5-coder-14b
+  base_url: "http://127.0.0.1:1234/v1"
+  api_key: "dummy_key"
+  provider: lmstudio # registered name through decorator
+architecture_summary_llm:
+  model: qwen/qwen2.5-coder-14b
+  base_url: "http://127.0.0.1:1234/v1"
+  api_key: "dummy_key"
+  provider: lmstudio # registered name through decorator
+readme_llm:
+  model: qwen2.5-14b-instruct
+  base_url: "http://127.0.0.1:1234/v1"
+  api_key: "dummy_key"
+  provider: lmstudio # registered name through decorator

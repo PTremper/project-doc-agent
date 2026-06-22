@@ -62,6 +62,13 @@ Generated artifacts are written to the configured output directory and can be re
 ### v0.1
 `project-doc-agent` is currently an early prototype. The generated documentation is intended to serve as a high-quality draft rather than a fully polished final document. Future improvements will focus on richer repository analysis, better architecture extraction, and higher-quality documentation output. 
 
+### v0.2
+- moved llm configuration into config.yaml
+- llms now use a registry pattern
+  -  registered through a decorator
+  - automatically discovered in the models/clients/ folder
+  - inherit from base class BaseLLM to ensure the necessary class structure
+
 ## Vision
 
 The long-term goal is to create a modular documentation pipeline where different LLMs can be assigned to specialized tasks such as:

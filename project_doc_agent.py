@@ -1,11 +1,15 @@
 import argparse
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
 from tqdm import tqdm
 
-from models.clients.lmstudio_client import LMStudioLLM
+from models.registry import discover_clients, get_llm
+
+if TYPE_CHECKING:
+    from models.base import BaseLLM
 
 
 def _parse_args() -> argparse.Namespace:
@@ -26,8 +30,34 @@ def _configure_logger() -> logging.Logger:
     return logging.getLogger(__name__)
 
 
-def read_project(path: str | Path) -> str:
+def read_script_as_text(path: str | Path) -> str:
+    """Read a script as text for LLM processing."""
     return Path(path).read_text()
+
+
+def initialize_llm(config: dict[str, dict[str, str]], llm_task: str) -> BaseLLM:
+    """Initialize the LLM for the given task using the given configuration.
+
+    This function wraps checking all the config entries and error handling.
+    """
+    llm_config = config.get(f"{llm_task}")
+    if llm_config is None:
+        msg = f"{llm_task} is not configured"
+        raise KeyError(msg)
+    if (provider := llm_config.get("provider")) is None:
+        msg = f"{llm_task}provider is not configured"
+        raise KeyError(msg)
+    if (model := llm_config.get("model")) is None:
+        msg = f"{llm_task} model is not configured"
+        raise KeyError(msg)
+    if (base_url := llm_config.get("base_url")) is None:
+        msg = f"{llm_task} base_url is not configured"
+        raise KeyError(msg)
+    if (api_key := llm_config.get("api_key")) is None:
+        msg = f"{llm_task} api_key is not configured"
+        raise KeyError(msg)
+    llm_class = get_llm(provider)
+    return llm_class(model=model, base_url=base_url, api_key=api_key)
 
 
 def main():
@@ -52,14 +82,19 @@ def main():
         if not any(subdir in str(file) for subdir in ignore_folders)
     ]
 
+    # populate the registry with available LLM classes
+    discover_clients()
+
     with (system_prompt_path / "module_summary.md").open("r") as f:
         system_prompt = f.read()
-    llm = LMStudioLLM(model=config.get("summary_llm", None))
+
+    llm = initialize_llm(config=config, llm_task="module_summary_llm")
+
     try:
         for module_path in (pbar := tqdm(module_paths)):
             pbar.set_description(f"Processing {module_path.name}")
 
-            code = read_project(module_path)
+            code = read_script_as_text(module_path)
 
             messages = llm.build_prompt(system_prompt=system_prompt, context=code)
             module_summary = llm.generate(messages)
@@ -83,7 +118,9 @@ def main():
 
     with (system_prompt_path / "architecture.md").open("r") as f:
         system_prompt = f.read()
-    llm = LMStudioLLM(model=config.get("architecture_llm", None))
+
+    llm = initialize_llm(config=config, llm_task="architecture_summary_llm")
+
     try:
         logger.info("Loading model to write the architecture summary...")
         architecture_summary = llm.generate(
@@ -121,7 +158,9 @@ def main():
         "## Module Summaries:\n"
         f"{all_module_summaries}\n\n"
     )
-    llm = LMStudioLLM(model=config.get("readme_llm", None))
+
+    llm = initialize_llm(config=config, llm_task="readme_llm")
+
     try:
         logger.info("Loading model to write the readme...")
         readme = llm.generate(llm.build_prompt(system_prompt=system_prompt, context=readme_context))

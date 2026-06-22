@@ -8,14 +8,18 @@ if TYPE_CHECKING:
         ChatCompletionUserMessageParam,
     )
 
+from models.base import BaseLLM
+from models.registry import register_llm
 
-class LMStudioLLM:
+
+@register_llm("lmstudio")
+class LMStudioLLM(BaseLLM):
     """A wrapper around the LMStudio client for generating responses from a local model."""
 
     def __init__(
         self,
         model: str,
-        base_url: str = "http://127.0.0.1:1234/v1",
+        base_url: str,
         api_key: str = "dummy",
     ) -> None:
         """Initialize the LMStudioLLM with the given model and base URL."""
@@ -26,7 +30,7 @@ class LMStudioLLM:
     def build_prompt(
         self,
         system_prompt: str,
-        content: str,
+        context: str,
     ) -> list[ChatCompletionDeveloperMessageParam | ChatCompletionUserMessageParam]:
 
         system_prompt_dict: ChatCompletionDeveloperMessageParam = {
@@ -35,7 +39,7 @@ class LMStudioLLM:
         }
         user_message_dict: ChatCompletionUserMessageParam = {
             "role": "user",
-            "content": content,
+            "content": context,
         }
 
         return [system_prompt_dict, user_message_dict]
@@ -43,8 +47,8 @@ class LMStudioLLM:
     def generate(
         self,
         messages: list[ChatCompletionDeveloperMessageParam | ChatCompletionUserMessageParam],
-        # temperature: float = 0.0,
         max_tokens: int | None = None,
+        temperature: float = 0.0,
     ) -> str:
         """Generate a response of the LLM based on the prompt."""
         response = self.client.chat.completions.create(
