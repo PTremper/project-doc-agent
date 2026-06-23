@@ -8,8 +8,8 @@ if TYPE_CHECKING:
         ChatCompletionUserMessageParam,
     )
 
-from models.base import BaseLLM
-from models.registry import register_llm
+from src.models.base import BaseLLM
+from src.models.registry import register_llm
 
 
 @register_llm("lmstudio")

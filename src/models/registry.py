@@ -2,12 +2,12 @@ import importlib
 import pkgutil
 from typing import TYPE_CHECKING
 
-import models.clients
+from . import clients
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from models.base import BaseLLM
+    from src.models.base import BaseLLM
 
 LLM_REGISTRY: dict[str, type[BaseLLM]] = {}
 
@@ -36,5 +36,6 @@ def get_llm(name: str) -> type[BaseLLM]:
 
 def discover_clients() -> None:
     """Automatically discover LLM client classes in the models/clients folder."""
-    for module_info in pkgutil.iter_modules(models.clients.__path__):
-        importlib.import_module(f"models.clients.{module_info.name}")
+    package_name = clients.__name__
+    for module_info in pkgutil.iter_modules(clients.__path__):
+        importlib.import_module(f"{package_name}.{module_info.name}")

@@ -6,10 +6,12 @@ from typing import TYPE_CHECKING
 import yaml
 from tqdm import tqdm
 
-from models.registry import discover_clients, get_llm
+from src.models.registry import discover_clients, get_llm
+from src.parser.module_metadata_extractor import extract_module_metadata
+from src.parser.module_reader import read_script_as_text
 
 if TYPE_CHECKING:
-    from models.base import BaseLLM
+    from src.models.base import BaseLLM
 
 
 def _parse_args() -> argparse.Namespace:
@@ -28,11 +30,6 @@ def _configure_logger() -> logging.Logger:
         ],
     )
     return logging.getLogger(__name__)
-
-
-def read_script_as_text(path: str | Path) -> str:
-    """Read a script as text for LLM processing."""
-    return Path(path).read_text()
 
 
 def initialize_llm(config: dict[str, dict[str, str]], llm_task: str) -> BaseLLM:
@@ -63,7 +60,7 @@ def initialize_llm(config: dict[str, dict[str, str]], llm_task: str) -> BaseLLM:
 def main():
     logger = _configure_logger()
     parser = _parse_args()
-    config = yaml.safe_load(Path("config.yaml").read_text())
+    config = yaml.safe_load(Path("config/config.yaml").read_text())
 
     ignore_folders = config.get("ignore", [])
 
@@ -94,12 +91,15 @@ def main():
         for module_path in (pbar := tqdm(module_paths)):
             pbar.set_description(f"Processing {module_path.name}")
 
+            module_metadata = extract_module_metadata(module_path)
             code = read_script_as_text(module_path)
 
-            messages = llm.build_prompt(system_prompt=system_prompt, context=code)
+            context = f"Module metadata: {module_metadata}\n\nCode:\n\n{code}"
+
+            messages = llm.build_prompt(system_prompt=system_prompt, context=context)
             module_summary = llm.generate(messages)
 
-            filename = module_path.name.replace(".py", ".md")
+            filename = module_path.stem + ".md"
 
             with (summary_dir / filename).open("w") as f:
                 f.write(module_summary)

@@ -11,6 +11,8 @@ The documentation pipeline consists of three stages:
 1. **Module Summarization**
 
    * Analyze each Python file individually
+      * File function and class structure
+      * File code content 
    * Generate concise summaries of its purpose and functionality
 
 2. **Architecture Synthesis**
@@ -25,27 +27,30 @@ The documentation pipeline consists of three stages:
 
 ```text
 Python Repository
-      │  
-      ▼  
-Module Summaries
-    │   │
-    │   ▼
-Architecture Summary
-    │   │
-    ▼   ▼
-README Draft
+      │   │
+      │   ▼
++ Module Metadata (AST)
+      │   │
+      ▼   ▼
+1. Module Summaries
+      │   │
+      │   ▼
+2. Architecture Summary
+      │   │
+      │   │
++ User Instructions
+  │   │   │
+  ▼   ▼   ▼
+3. README Draft
 ```
 
 ## Configuration
 
 Pipeline behavior is controlled through a `config.yaml` file.
 
-Configuration options include:
+The LLM for each stage can be configured separately, which allows the usage of local LLMs for code analysis and large cloud LLMs for generating the readme. 
 
-* LLM selection per pipeline stage
-* Ignored files and directories
-
-System prompt templates resides in `system_prompts.py`.
+System prompt templates reside in `system_prompts/`.
 
 This allows experimenting with different models and prompts without changing application code.
 
@@ -65,9 +70,13 @@ Generated artifacts are written to the configured output directory and can be re
 ### v0.2
 - moved llm configuration into config.yaml
 - llms now use a registry pattern
-  -  registered through a decorator
+  - registered through a decorator
   - automatically discovered in the models/clients/ folder
   - inherit from base class BaseLLM to ensure the necessary class structure
+
+### v0.3
+- moved code into src/ folder
+- added ast parsing module to feed module metadata to the LLM
 
 ## Vision
 
