@@ -64,8 +64,10 @@ Generated artifacts are written to the configured output directory and can be re
 
 ## Project Status
 
-### v0.1
 `project-doc-agent` is currently an early prototype. The generated documentation is intended to serve as a high-quality draft rather than a fully polished final document. Future improvements will focus on richer repository analysis, better architecture extraction, and higher-quality documentation output. 
+
+### v0.1
+Initial functional prototype: pipeline that reads a module, uses LLMs to generate summaries of its files, summarizes them into an architecture summary and drafts a readme. 
 
 ### v0.2
 - moved llm configuration into config.yaml
@@ -77,6 +79,17 @@ Generated artifacts are written to the configured output directory and can be re
 ### v0.3
 - moved code into src/ folder
 - added ast parsing module to feed module metadata to the LLM
+
+### v0.4
+- added single file docstring generation using libcst
+  - reads a python file, traverses the cst and extracts all functions and classes
+  - prompts a LLM to write docstrings for the module, functions and classes
+  - traverses the cst a second time and injects the docstrings (without touching the original file)
+  - saves the code with docstrings as a .patch file to ensure code cannot be compromised
+    - user can inspect the .patch file and
+      - check it for errors using `patch --dry-run file_name.py < file_name.patch`
+      - and apply it using `patch file_name.py < file_name.patch`
+    - At this stage, a copy of the code is created to make development easier and repeatedly test patching
 
 ## Vision
 
