@@ -4,6 +4,8 @@ Dummy module for testing AST traversal and docstring insertion.
 This file intentionally contains a variety of Python constructs.
 """
 
+import os
+import sys
 from functools import cache
 from typing import Any
 

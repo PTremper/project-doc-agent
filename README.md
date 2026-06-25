@@ -91,6 +91,13 @@ Initial functional prototype: pipeline that reads a module, uses LLMs to generat
       - and apply it using `patch file_name.py < file_name.patch`
     - At this stage, a copy of the code is created to make development easier and repeatedly test patching
 
+### v0.5
+- refactored docstring generation
+- introduced dataclasses for module and object metadata
+- readme metadata extraction through cst visitor class like in docstring discovery step
+
+- known bug: generate_docstrings for the file tree_docstring_transformer.py throws an obscure error
+
 ## Vision
 
 The long-term goal is to create a modular documentation pipeline where different LLMs can be assigned to specialized tasks such as:
