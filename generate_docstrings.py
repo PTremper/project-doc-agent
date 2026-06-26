@@ -14,16 +14,6 @@ from src.parser.tree_docstring_transformer import TreeDocstringTransformer
 from src.parser.tree_metadata_collector import TreeMetadataCollector
 from src.utils.initialize_llm import initialize_llm
 
-# @dataclass
-# class DocstringTarget:
-#     kind: str
-#     name: str
-#     parent_class: str | None
-#     module_name: str
-#     source_code: str
-#     module_summary: str
-#     ast_overview: str
-
 
 # fmt: off
 def _parse_args() -> argparse.Namespace:
@@ -39,11 +29,6 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main():
-    # three options:
-    # - only new docstrings
-    # - completely new docstrings
-    # (- also rework old ones using them as context)
-    # at first, only the first two options
 
     # populate the registry with available LLM classes
     discover_clients()
@@ -53,7 +38,7 @@ def main():
     keep_existing = args.keep_existing
 
     # -----------------------------------------------------------------------
-    # stage 1: traverse tree and write metadata to disk
+    # stage 1 - CST Analysis: traverse tree and write metadata to disk
 
     original_module_path = Path(target_file_path).expanduser()
     module_path = Path(original_module_path.stem + "_copy.py").expanduser()
@@ -65,7 +50,7 @@ def main():
     tree.visit(collector)
 
     # -----------------------------------------------------------------------
-    # stage 2: llm generates docstrings based on metadata
+    # stage 2 - LLM Docstring Generation: generation based on metadata
 
     system_prompt_path = Path("system_prompts")
     config = yaml.safe_load(Path("config/config.yaml").read_text())
@@ -115,7 +100,7 @@ def main():
     docstrings_file.write_text(json.dumps(new_docstrings))
     logger.info(f"Docstrings saved to {docstrings_file}")
     # # -----------------------------------------------------------------------
-    # stage 3: traverse tree, apply docstrings and write patch file
+    # stage 3 - Patch Generation: traverse tree, apply docstrings and write patch file
 
     transformer = TreeDocstringTransformer(docstrings=new_docstrings, keep_existing=keep_existing)
     transformed_tree = tree.visit(transformer)

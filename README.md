@@ -1,110 +1,156 @@
-# Project-Doc-Agent
+# Project Doc Agent
 
-Generate project documentation from source code using a configurable multi-stage LLM pipeline.
+**Project Doc Agent** is an experimental AI-assisted documentation tool for Python projects. It combines static code analysis with configurable LLM pipelines to generate project documentation and suggest high-quality NumPy-style docstrings.
 
-`project-doc-agent` analyzes a Python repository, creates module-level summaries, combines them into an architecture overview, and finally generates a draft `README.md`. The goal is to provide a solid starting point for project documentation while keeping the entire workflow configurable and model-agnostic.
+The project is designed around the idea that documenting an entire repository should be a multi-stage process rather than a single prompt. Instead of sending a complete codebase to an LLM, Project Doc Agent incrementally builds an understanding of the project before generating documentation.
 
-## How It Works
+> **Project status:** Active prototype. The current implementation produces useful first drafts of README files and docstrings that are intended to be reviewed by a developer before being committed.
 
-The documentation pipeline consists of three stages:
+---
 
-1. **Module Summarization**
+## Features
 
-   * Analyze each Python file individually
-      * File function and class structure
-      * File code content 
-   * Generate concise summaries of its purpose and functionality
+### Repository documentation
 
-2. **Architecture Synthesis**
+Generate a draft `README.md` for a Python project using a hierarchical summarization pipeline.
 
-   * Combine module summaries
-   * Produce a high-level overview of the project's structure and responsibilities
+Current pipeline:
 
-3. **README Generation**
+1. Analyze every Python module individually.
+2. Generate module summaries.
+3. Combine module summaries into an architecture summary.
+4. Generate a project README from the synthesized architecture.
 
-   * Use the architecture summary as context
-   * Generate a draft README describing the project
+This approach allows local models with relatively small context windows to reason about larger repositories.
+
+---
+
+### Docstring generation
+
+Generate NumPy-style docstrings for Python source files.
+
+Current capabilities:
+
+* Module docstrings
+* Class docstrings
+* Function and method docstrings
+* Detection of existing docstrings
+* Generation of Git-compatible `.patch` files rather than directly modifying source code
+
+The generated patches can be reviewed before being applied, providing a safer workflow than automatic source modification.
+
+---
+
+## Design Goals
+
+The project focuses on three principles:
+
+* **Model agnostic** – configure different LLMs for different stages of the pipeline. 
+  * This allows smaller local models to handle code analysis while larger models can be reserved for producing polished user-facing documentation.
+  * Models are automatically discovered through a registry-pattern when an adapter class exists that inherits from the BaseLLM class.
+* **Configurable** – prompts and pipeline behavior are defined through configuration files.
+  * A config yaml file allows specifying the pipeline behavior.
+  * Markdown files expose the LLM instructions and allow for easy editing.
+* **Safe by default** – generate patches instead of directly rewriting source files.
+  * Easy to review
+  * Easy to apply using `patch file_name.py < file_name.patch`
+
+---
+
+## Current Architecture
+
+Readme generation workflow:
 
 ```text
-Python Repository
-      │   │
-      │   ▼
-+ Module Metadata (AST)
-      │   │
-      ▼   ▼
-1. Module Summaries
-      │   │
-      │   ▼
-2. Architecture Summary
-      │   │
-      │   │
-+ User Instructions
-  │   │   │
-  ▼   ▼   ▼
-3. README Draft
+ Python Repository
+        │
+        ▼
+   CST Analysis
+        │
+        ▼
+ Module Summaries (LLM)
+        │
+        ▼
+Architecture Summary (LLM)
+        │
+        ▼
+ README Generation (LLM)
 ```
 
-## Configuration
+Docstring generation workflow:
 
-Pipeline behavior is controlled through a `config.yaml` file.
+```text
+  Python Source
+        │
+        ▼
+   CST Analysis
+        │
+        ▼
+Docstring Generation (LLM)
+        │
+        ▼
+  Patch Generation
+```
 
-The LLM for each stage can be configured separately, which allows the usage of local LLMs for code analysis and large cloud LLMs for generating the readme. 
+---
 
-System prompt templates reside in `system_prompts/`.
+## Usage
 
-This allows experimenting with different models and prompts without changing application code.
-
-## Example Usage
+Generate repository documentation (readme):
 
 ```bash
-python project_doc_agent.py /path/to/project
+python generate_documentation.py /path/to/project
 ```
 
-Generated artifacts are written to the configured output directory and can be reviewed or edited before publication.
+Generate docstrings for a Python file:
 
-## Project Status
+```bash
+python generate_docstrings.py path/to/module.py
+```
 
-`project-doc-agent` is currently an early prototype. The generated documentation is intended to serve as a high-quality draft rather than a fully polished final document. Future improvements will focus on richer repository analysis, better architecture extraction, and higher-quality documentation output. 
+The generated output is written as a Git-compatible `.patch` file that can be reviewed before applying.
 
-### v0.1
-Initial functional prototype: pipeline that reads a module, uses LLMs to generate summaries of its files, summarizes them into an architecture summary and drafts a readme. 
+### Connecting to LLMs
+LLMs can easily be added through defining an adapter class which is automatically discovered by the registry. 
 
-### v0.2
-- moved llm configuration into config.yaml
-- llms now use a registry pattern
-  - registered through a decorator
-  - automatically discovered in the models/clients/ folder
-  - inherit from base class BaseLLM to ensure the necessary class structure
+First, add a .py file in `src/models/client/`. This file should contain a class:
+- with a registry decorator `@register_llm(provider-name)`, imported with `from src.models.registry import register_llm`.
+- that is derived from the abstract base class `BaseLLM` imported with `from src.models.base import BaseLLM` in order to expose the required API. 
 
-### v0.3
-- moved code into src/ folder
-- added ast parsing module to feed module metadata to the LLM
+This will allow the script to automatically detect and use the adapter class. 
 
-### v0.4
-- added single file docstring generation using libcst
-  - reads a python file, traverses the cst and extracts all functions and classes
-  - prompts a LLM to write docstrings for the module, functions and classes
-  - traverses the cst a second time and injects the docstrings (without touching the original file)
-  - saves the code with docstrings as a .patch file to ensure code cannot be compromised
-    - user can inspect the .patch file and
-      - check it for errors using `patch --dry-run file_name.py < file_name.patch`
-      - and apply it using `patch file_name.py < file_name.patch`
-    - At this stage, a copy of the code is created to make development easier and repeatedly test patching
+Second, edit the `config/config.yaml` file and specify the model and connection details. 
 
-### v0.5
-- refactored docstring generation
-- introduced dataclasses for module and object metadata
-- readme metadata extraction through cst visitor class like in docstring discovery step
+---
 
-- known bug: generate_docstrings for the file tree_docstring_transformer.py throws an obscure error
+## Technologies
 
-## Vision
+* Python
+* Local LLM inference (LM Studio)
+* Python Concrete Syntax Tree (CST)
+* Configurable YAML pipeline
+* Prompt templating
+* Git patch generation
 
-The long-term goal is to create a modular documentation pipeline where different LLMs can be assigned to specialized tasks such as:
+---
 
-* Docstring generation and agentic implementation
-* README generation
-* API documentation
-* ...
+## Roadmap
 
-This allows smaller local models to handle code analysis while larger models can be reserved for producing polished user-facing documentation.
+Planned improvements include:
+
+* Repository-wide docstring generation
+* Applying docstrings across entire projects
+* Ensure Ruff compliant docstring formatting
+* Optional integration of documentation generation and docstring generation into a single pipeline
+* Improved repository understanding
+* Higher-quality architecture summaries
+* Support for additional LLM providers
+* More configurable documentation pipelines
+
+---
+
+## Motivation
+
+Large language models are capable of generating high-quality documentation, but repository-scale documentation requires more context than many local models can process in a single prompt.
+
+Project Doc Agent explores a hierarchical approach where information is summarized step-by-step, allowing smaller local models to contribute effectively while keeping the system modular and extensible.
